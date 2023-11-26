@@ -1,5 +1,6 @@
 package com.epam.crmgymboot.controller;
 
+import com.epam.crmgymboot.actuator.RequestsCounterMetrics;
 import com.epam.crmgymboot.dto.common.TraineeDTO;
 import com.epam.crmgymboot.dto.common.TrainerDTO;
 import com.epam.crmgymboot.dto.common.TrainingDTO;
@@ -31,15 +32,18 @@ public class TraineeController {
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
+    private final RequestsCounterMetrics metrics;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SignUpResponse signUpTrainee(@Valid @RequestBody SignUpTraineeRequest request) {
+        metrics.incrementPostRequests();
         return traineeService.signUpTrainee(request);
     }
 
     @GetMapping("/{username}")
     public TraineeDTO getTrainee(@PathVariable(name = "username") String username) {
+        metrics.incrementGetRequests();
         return traineeService.getTraineeProfile(username);
     }
 
@@ -91,7 +95,7 @@ public class TraineeController {
                 throw new IllegalArgumentException("Format must match to pattern `yyyy-MM-ddTHH:mm`. Invalid periodFrom format: " + periodFrom);
             }
         }
-
+        metrics.incrementGetRequests();
         return trainingService.getTrainingsOfTrainee(
                 username,
                 trainerUsername,
@@ -106,6 +110,7 @@ public class TraineeController {
     public List<TrainerResponse> getActiveTrainersNotAssignedOnTrainee(
             @PathVariable String username
     ) {
+        metrics.incrementGetRequests();
         return trainerService.findActiveTrainersNotAssignedOnTrainee(username);
     }
 

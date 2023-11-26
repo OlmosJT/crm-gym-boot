@@ -1,5 +1,6 @@
 package com.epam.crmgymboot.controller;
 
+import com.epam.crmgymboot.actuator.RequestsCounterMetrics;
 import com.epam.crmgymboot.dto.common.TrainingDTO;
 import com.epam.crmgymboot.dto.request.AddTrainingRequest;
 import com.epam.crmgymboot.service.TrainingService;
@@ -14,10 +15,12 @@ import org.springframework.web.bind.annotation.*;
 public class TrainingController {
 
     private final TrainingService trainingService;
+    private final RequestsCounterMetrics metrics;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TrainingDTO addTraining(@Valid @RequestBody AddTrainingRequest request) {
+        metrics.incrementPostRequests();
         return trainingService.createTraining(request);
     }
 
