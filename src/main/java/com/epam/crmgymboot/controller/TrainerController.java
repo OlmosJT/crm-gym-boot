@@ -68,7 +68,7 @@ public class TrainerController {
             @PathVariable String username,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
-            @RequestParam(defaultValue = "id,desc") String[] sort,
+            @RequestParam(defaultValue = "id") String[] sort,
             @RequestParam(required = false) String periodFrom,
             @RequestParam(required = false) String periodTo,
             @RequestParam(required = false) String traineeUsername
@@ -97,7 +97,7 @@ public class TrainerController {
                 traineeUsername,
                 localDateFrom,
                 localDateTo,
-                PageRequest.of(page, size, Sort.by(sort))
+                PageRequest.of(page, size, Sort.by(sort).descending())
         );
     }
 }

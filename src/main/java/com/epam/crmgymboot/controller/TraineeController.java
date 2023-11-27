@@ -4,6 +4,7 @@ import com.epam.crmgymboot.actuator.RequestsCounterMetrics;
 import com.epam.crmgymboot.dto.common.TraineeDTO;
 import com.epam.crmgymboot.dto.common.TrainerDTO;
 import com.epam.crmgymboot.dto.common.TrainingDTO;
+import com.epam.crmgymboot.dto.request.EnableDisableUserRequest;
 import com.epam.crmgymboot.dto.request.SignUpTraineeRequest;
 import com.epam.crmgymboot.dto.request.UpdateTraineeRequest;
 import com.epam.crmgymboot.dto.response.SignUpResponse;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -59,11 +61,12 @@ public class TraineeController {
     }
 
     @PatchMapping("/{username}")
-    public void enableDisableTrainee(
+    public ResponseEntity<String> enableDisableTrainee(
             @PathVariable String username,
-            @RequestParam(value = "isActive") boolean isActive
+            @Valid @RequestBody EnableDisableUserRequest request
     ) {
-        traineeService.activateDeactivateTrainee(username, isActive);
+        traineeService.activateDeactivateTrainee(username, request.isActive());
+        return new ResponseEntity<>("updated", HttpStatus.OK);
     }
 
     @GetMapping("/{username}/trainings")

@@ -4,5 +4,10 @@
       "name": "management.endpoint.info.contact.phone",
       "type": "java.lang.String",
       "description": "Description for management.endpoint.info.contact.phone."
-  }
-] }
+    },
+    {
+      "name": "management.health.external-service-health.enabled",
+      "type": "java.lang.String",
+      "description": "Description for management.health.external-service-health.enabled."
+    }
+  ] }

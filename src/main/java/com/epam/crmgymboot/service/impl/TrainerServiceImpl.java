@@ -60,7 +60,10 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public List<TrainerResponse> findActiveTrainersNotAssignedOnTrainee(String traineeUsername) {
+    public List<TrainerResponse> findActiveTrainersNotAssignedOnTrainee(String traineeUsername) throws EntityNotFoundException {
+        if(!traineeRepository.existsTraineeByUserEntityUsername(traineeUsername)) {
+            throw new EntityNotFoundException("Trainee not found");
+        }
         List<Trainer> trainers = trainerRepository
                 .findActiveTrainersNotAssociatedWithTrainee(traineeUsername);
         return TrainerMapper.toTrainerResponse(trainers);

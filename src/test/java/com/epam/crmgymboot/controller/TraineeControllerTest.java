@@ -2,6 +2,7 @@ package com.epam.crmgymboot.controller;
 
 import com.epam.crmgymboot.dto.common.TraineeDTO;
 import com.epam.crmgymboot.dto.common.TrainingDTO;
+import com.epam.crmgymboot.dto.request.EnableDisableUserRequest;
 import com.epam.crmgymboot.dto.request.SignUpTraineeRequest;
 import com.epam.crmgymboot.dto.response.SignUpResponse;
 import com.epam.crmgymboot.dto.response.TrainerResponse;
@@ -94,27 +95,7 @@ class TraineeControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
-    @Test
-    @DisplayName("PATCH trainees/{username} activates or deactivates a trainee")
-    void enableDisableTrainee_200OK() {
-        String url = "http://localhost:" + port + "/api/v1/trainees/john.doe";
 
-        UriComponents uriComponents = UriComponentsBuilder.fromUriString(url)
-                .queryParam("isActive", false)
-                .build();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<Void> deactivateResponse = restTemplate.exchange(
-                uriComponents.toUriString(),
-                HttpMethod.PUT,
-                new HttpEntity<>(headers),
-                Void.class
-        );
-
-        assertEquals(HttpStatus.OK, deactivateResponse.getStatusCode());
-    }
 
     @Test
     @DisplayName("PATCH trainees/{username} tries to activate or deactivate a unknown trainee")

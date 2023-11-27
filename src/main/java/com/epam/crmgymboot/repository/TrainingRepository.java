@@ -50,7 +50,8 @@ public interface TrainingRepository extends JpaRepository<Training, Long>, JpaSp
             String traineeUsername,
             Pageable pageable
     );
-
+ // CASE
+    //  WHEN value IS NULL THEN 'default'
 
     @Comment(value = "returns page of trainings associated with trainee")
     Page<Training> findAllByTraineeUserEntityUsername(String traineeUsername, Pageable pageable);
