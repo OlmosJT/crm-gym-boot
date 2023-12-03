@@ -52,7 +52,7 @@ class TraineeServiceImplTest {
 
         SignUpResponse response = traineeService.signUpTrainee(request);
         System.out.println(response);
-        Assertions.assertEquals("John.Cena", response.username());
+        Assertions.assertEquals("john.cena", response.username());
         Assertions.assertEquals(10, response.password().length());
 
 

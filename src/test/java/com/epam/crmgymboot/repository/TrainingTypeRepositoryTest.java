@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Sql(scripts = {"classpath:data/schema.sql", "classpath:data/data.sql" })
 class TrainingTypeRepositoryTest {
 
     @Autowired

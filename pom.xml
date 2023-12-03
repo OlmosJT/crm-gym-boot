@@ -11,24 +11,6 @@
         <relativePath/>
     </parent>
 
-    <profiles>
-        <profile>
-            <id>dev</id>
-            <properties>
-                <activatedProperties>dev</activatedProperties>
-            </properties>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-        <profile>
-            <id>prod</id>
-            <properties>
-                <activatedProperties>prod</activatedProperties>
-            </properties>
-        </profile>
-    </profiles>
-
     <groupId>com.epam</groupId>
     <artifactId>crmgymboot</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -79,6 +61,12 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.passay</groupId>
