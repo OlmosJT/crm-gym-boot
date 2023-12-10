@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -36,4 +37,9 @@ public class UserEntity {
             joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
     private Set<Role> roles;
+
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private Integer failedAttempt = 0;
+    @Column(nullable = true)
+    private LocalDateTime lockTime;
 }

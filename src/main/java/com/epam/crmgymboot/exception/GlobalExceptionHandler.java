@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -102,5 +103,18 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 request.getDescription(false)
         ), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorAPI> handleLockedException(
+            LockedException exception,
+            WebRequest request
+    ) {
+        return new ResponseEntity<>(new ErrorAPI(
+                HttpStatus.LOCKED.value(),
+                LocalDateTime.now(),
+                exception.getMessage(),
+                request.getDescription(false)
+        ), HttpStatus.LOCKED);
     }
 }

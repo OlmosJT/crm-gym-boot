@@ -1,49 +1,81 @@
 package com.epam.crmgymboot.service.impl;
 
 import com.epam.crmgymboot.dto.response.SignInResponse;
+import com.epam.crmgymboot.exception.UserLockedException;
+import com.epam.crmgymboot.model.UserEntity;
 import com.epam.crmgymboot.repository.RefreshTokenRepository;
+import com.epam.crmgymboot.repository.UserRepository;
 import com.epam.crmgymboot.security.JwtProperties;
 import com.epam.crmgymboot.service.AuthService;
 import com.epam.crmgymboot.service.TokenService;
+import jakarta.transaction.TransactionScoped;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+    private static final int MAX_ATTEMPT = 3;
     private final AuthenticationManager authManager;
     private final UserDetailsService userDetailsService;
     private final TokenService tokenService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProperties jwtProperties;
+    private final UserRepository userRepository;
 
     @Override
+    @Transactional(dontRollbackOn = {BadCredentialsException.class, UserLockedException.class})
     public SignInResponse authenticateUser(String username, String password) {
-        authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-        );
-        UserDetails user = userDetailsService.loadUserByUsername(username);
+        try {
+            authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password)
+            );
+            UserDetails user = userDetailsService.loadUserByUsername(username);
+            String accessToken = createAccessToken(user);
+            String refreshToken = createRefreshToken(user);
+            refreshTokenRepository.save(refreshToken, user);
 
-        String accessToken = createAccessToken(user);
-        String refreshToken = createRefreshToken(user);
+            // If authentication is successful, reset failedAttempt and lockTime
+            userRepository.findUserEntityByUsername(user.getUsername())
+                    .ifPresent(userEntity -> {
+                        userEntity.setFailedAttempt(0);
+                        userEntity.setLockTime(null);
+                        userRepository.save(userEntity);
+                    });
 
-        refreshTokenRepository.save(refreshToken, user);
-
-        return new SignInResponse(
-                user.getUsername(),
-                user.getAuthorities().stream().map(Object::toString).toList(),
-                accessToken,
-                refreshToken
-        );
+            return new SignInResponse(
+                    user.getUsername(),
+                    user.getAuthorities().stream().map(Object::toString).toList(),
+                    accessToken,
+                    refreshToken
+            );
+        } catch (BadCredentialsException exception) {
+            userRepository.findUserEntityByUsername(username).ifPresent(userEntity -> {
+                int newFailedAttempt = userEntity.getFailedAttempt() + 1;
+                // if the number of attempts is bigger than max attempts block the user
+                if(newFailedAttempt > MAX_ATTEMPT) {
+                    userEntity.setLockTime(LocalDateTime.now().plusMinutes(5));
+                    userEntity.setFailedAttempt(newFailedAttempt);
+                } else {
+                    userEntity.setFailedAttempt(newFailedAttempt);
+                }
+                userRepository.save(userEntity);
+            });
+            throw  new UserLockedException("Invalid Credentials. Please, try again");
+        }
     }
 
     @Override
