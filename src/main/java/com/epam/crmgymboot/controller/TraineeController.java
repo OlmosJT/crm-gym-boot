@@ -36,12 +36,6 @@ public class TraineeController {
     private final TrainingService trainingService;
     private final RequestsCounterMetrics metrics;
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public SignUpResponse signUpTrainee(@Valid @RequestBody SignUpTraineeRequest request) {
-        metrics.incrementPostRequests();
-        return traineeService.signUpTrainee(request);
-    }
 
     @GetMapping("/{username}")
     public TraineeDTO getTrainee(@PathVariable(name = "username") String username) {

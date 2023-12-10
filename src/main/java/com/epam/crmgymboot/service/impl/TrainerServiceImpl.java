@@ -6,10 +6,8 @@ import com.epam.crmgymboot.dto.request.UpdateTrainerRequest;
 import com.epam.crmgymboot.dto.response.SignUpResponse;
 import com.epam.crmgymboot.dto.response.TrainerResponse;
 import com.epam.crmgymboot.mapper.TrainerMapper;
-import com.epam.crmgymboot.model.Trainee;
-import com.epam.crmgymboot.model.Trainer;
-import com.epam.crmgymboot.model.TrainingType;
-import com.epam.crmgymboot.model.UserEntity;
+import com.epam.crmgymboot.model.*;
+import com.epam.crmgymboot.repository.RoleRepository;
 import com.epam.crmgymboot.repository.TraineeRepository;
 import com.epam.crmgymboot.repository.TrainerRepository;
 import com.epam.crmgymboot.repository.TrainingTypeRepository;
@@ -17,10 +15,12 @@ import com.epam.crmgymboot.service.TrainerService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.epam.crmgymboot.service.UserGeneratorUtils.passwordGenerator;
 import static com.epam.crmgymboot.service.UserGeneratorUtils.usernameGenerator;
@@ -33,6 +33,8 @@ public class TrainerServiceImpl implements TrainerService {
     private final TrainerRepository trainerRepository;
     private final TraineeRepository traineeRepository;
     private final TrainingTypeRepository trainingTypeRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public SignUpResponse signUpTrainer(SignUpTrainerRequest request) throws EntityNotFoundException {
@@ -43,9 +45,17 @@ public class TrainerServiceImpl implements TrainerService {
                 request.getLastname(),
                 trainerRepository::existsTrainerByUserEntityUsername)
         );
-        userEntity.setPassword(passwordGenerator(10));
+        String generatedPassword = passwordGenerator(10);
+        userEntity.setPassword(passwordEncoder.encode(generatedPassword));
         userEntity.setDateOfBirth(request.getDateOfBirth());
         userEntity.setAddress(request.getAddress());
+
+        Role role_user = roleRepository.findByName(RoleEnum.ROLE_USER)
+                .orElseThrow(() -> new EntityNotFoundException("Role USER not found in database"));
+        Role role_trainer = roleRepository.findByName(RoleEnum.ROLE_TRAINER)
+                .orElseThrow(() -> new EntityNotFoundException("Role TRAINER not found in database"));
+        userEntity.setRoles(Set.of(role_user, role_trainer));
+
         userEntity.setIsActive(true);
 
         Trainer trainer = new Trainer();
@@ -56,7 +66,7 @@ public class TrainerServiceImpl implements TrainerService {
         trainer.setTrainings(Collections.emptyList());
 
         trainerRepository.save(trainer);
-        return new SignUpResponse(userEntity.getUsername(), userEntity.getPassword());
+        return new SignUpResponse(userEntity.getUsername(), generatedPassword);
     }
 
     @Override

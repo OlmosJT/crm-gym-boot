@@ -5,9 +5,8 @@ import com.epam.crmgymboot.dto.request.SignUpTraineeRequest;
 import com.epam.crmgymboot.dto.request.UpdateTraineeRequest;
 import com.epam.crmgymboot.dto.response.SignUpResponse;
 import com.epam.crmgymboot.mapper.TraineeMapper;
-import com.epam.crmgymboot.model.Trainee;
-import com.epam.crmgymboot.model.Trainer;
-import com.epam.crmgymboot.model.UserEntity;
+import com.epam.crmgymboot.model.*;
+import com.epam.crmgymboot.repository.RoleRepository;
 import com.epam.crmgymboot.repository.TraineeRepository;
 import com.epam.crmgymboot.repository.TrainerRepository;
 import com.epam.crmgymboot.service.TraineeService;
@@ -15,10 +14,12 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.epam.crmgymboot.service.UserGeneratorUtils.passwordGenerator;
 import static com.epam.crmgymboot.service.UserGeneratorUtils.usernameGenerator;
@@ -29,6 +30,8 @@ public class TraineeServiceImpl implements TraineeService {
 
     private final TraineeRepository traineeRepository;
     private final TrainerRepository trainerRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
     @Override
     @Transactional
@@ -40,18 +43,24 @@ public class TraineeServiceImpl implements TraineeService {
                 request.getLastname(),
                 traineeRepository::existsTraineeByUserEntityUsername)
         );
-        userEntity.setPassword(passwordGenerator(10));
+        String generatedPassword = passwordGenerator(10);
+        userEntity.setPassword(passwordEncoder.encode(generatedPassword));
         userEntity.setDateOfBirth(request.getDateOfBirth());
         userEntity.setAddress(request.getAddress());
-        userEntity.setIsActive(true);
 
+        Role role_user = roleRepository.findByName(RoleEnum.ROLE_USER)
+                .orElseThrow(() -> new EntityNotFoundException("Role USER not found in database"));
+        Role role_trainee = roleRepository.findByName(RoleEnum.ROLE_TRAINEE)
+                .orElseThrow(() -> new EntityNotFoundException("Role TRAINEE not found in database"));
+        userEntity.setRoles(Set.of(role_user, role_trainee));
+        userEntity.setIsActive(true);
         Trainee trainee = new Trainee();
         trainee.setUserEntity(userEntity);
         trainee.setTrainings(Collections.emptyList());
 
         traineeRepository.save(trainee);
 
-        return new SignUpResponse(userEntity.getUsername(), userEntity.getPassword());
+        return new SignUpResponse(userEntity.getUsername(), generatedPassword);
     }
 
     @Override

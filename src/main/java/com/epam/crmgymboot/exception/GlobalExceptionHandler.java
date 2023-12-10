@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -90,5 +91,16 @@ public class GlobalExceptionHandler {
         ), HttpStatus.BAD_REQUEST);
     }
 
-
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorAPI> handleUsernameNotFoundException(
+            UsernameNotFoundException exception,
+            WebRequest request
+    ) {
+        return new ResponseEntity<>(new ErrorAPI(
+                HttpStatus.UNAUTHORIZED.value(),
+                LocalDateTime.now(),
+                exception.getMessage(),
+                request.getDescription(false)
+        ), HttpStatus.BAD_REQUEST);
+    }
 }

@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -24,9 +25,15 @@ public class UserEntity {
     private String address;
     @Temporal(TemporalType.DATE)
     private LocalDate dateOfBirth;
-    @Column(nullable = false, length = 15)
+    @Column(nullable = false)
     private String password;
     @Column(nullable = false)
     @ColumnDefault(value = "false")
     private Boolean isActive;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "user_roles",
+            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
+            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
+    private Set<Role> roles;
 }

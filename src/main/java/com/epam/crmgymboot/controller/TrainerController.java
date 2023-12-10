@@ -26,8 +26,6 @@ import java.util.List;
 @RequestMapping("api/v1/trainers")
 @AllArgsConstructor
 public class TrainerController {
-
-    private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
     private final RequestsCounterMetrics metrics;

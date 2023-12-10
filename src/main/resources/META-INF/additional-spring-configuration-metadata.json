@@ -9,5 +9,20 @@
       "name": "management.health.external-service-health.enabled",
       "type": "java.lang.String",
       "description": "Description for management.health.external-service-health.enabled."
+    },
+    {
+      "name": "jwt.access-token-expiration",
+      "type": "java.lang.String",
+      "description": "Description for jwt.access-token-expiration."
+    },
+    {
+      "name": "jwt.refresh-token-expiration",
+      "type": "java.lang.String",
+      "description": "Description for jwt.refresh-token-expiration."
+    },
+    {
+      "name": "jwt.key",
+      "type": "java.lang.String",
+      "description": "Description for jwt.key."
     }
   ] }
