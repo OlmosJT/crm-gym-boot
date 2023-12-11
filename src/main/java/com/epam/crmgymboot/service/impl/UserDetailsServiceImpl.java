@@ -2,6 +2,7 @@ package com.epam.crmgymboot.service.impl;
 
 import com.epam.crmgymboot.model.UserEntity;
 import com.epam.crmgymboot.repository.UserRepository;
+import com.epam.crmgymboot.security.UserDetailsAdapter;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +39,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             userRepository.save(userEntity);
         }
 
-        return User.builder()
-                .username(userEntity.getUsername())
-                .password(userEntity.getPassword())
-                .authorities(userEntity.getRoles().stream().map(role -> role.getName().name()).toArray(String[]::new))
-                .build();
+        return new UserDetailsAdapter(userEntity);
     }
 }

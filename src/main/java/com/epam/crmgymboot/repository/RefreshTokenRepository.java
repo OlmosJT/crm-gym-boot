@@ -1,21 +1,16 @@
 package com.epam.crmgymboot.repository;
 
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
+import com.epam.crmgymboot.model.RefreshToken;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
-@Component
-public class RefreshTokenRepository {
-    private final Map<String, UserDetails> tokens = new ConcurrentHashMap<>();
+public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
+    Optional<RefreshToken> findByToken(String token);
+    Optional<RefreshToken> findByUserUsername(String username);
 
-    public UserDetails findUserDetailsByToken(String token) {
-        return tokens.get(token);
-    }
-
-    public void save(String token, UserDetails userDetails) {
-        tokens.put(token, userDetails);
-    }
+    @Modifying
+    void deleteByUserUsername(String username);
 
 }

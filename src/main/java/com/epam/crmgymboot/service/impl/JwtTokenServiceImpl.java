@@ -1,12 +1,14 @@
 package com.epam.crmgymboot.service.impl;
 
+import com.epam.crmgymboot.repository.RefreshTokenRepository;
+import com.epam.crmgymboot.repository.UserRepository;
 import com.epam.crmgymboot.security.JwtProperties;
-import com.epam.crmgymboot.service.TokenService;
+import com.epam.crmgymboot.service.JwtTokenService;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +20,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-public class TokenServiceImpl implements TokenService {
+public class JwtTokenServiceImpl implements JwtTokenService {
 
     private final JwtProperties jwtProperties;
 
@@ -58,7 +60,7 @@ public class TokenServiceImpl implements TokenService {
                 .before(new Date(System.currentTimeMillis()));
     }
 
-    private Claims getAllClaims(String token) {
+    private Claims getAllClaims(String token) throws ExpiredJwtException {
         return Jwts.parser()
                 .verifyWith(secretKey())
                 .build()

@@ -1,29 +1,32 @@
 package com.epam.crmgymboot.service.impl;
 
+import com.epam.crmgymboot.dto.common.TokenDto;
 import com.epam.crmgymboot.dto.response.SignInResponse;
 import com.epam.crmgymboot.exception.UserLockedException;
-import com.epam.crmgymboot.model.UserEntity;
+import com.epam.crmgymboot.model.RefreshToken;
 import com.epam.crmgymboot.repository.RefreshTokenRepository;
 import com.epam.crmgymboot.repository.UserRepository;
 import com.epam.crmgymboot.security.JwtProperties;
+import com.epam.crmgymboot.security.UserDetailsAdapter;
 import com.epam.crmgymboot.service.AuthService;
-import com.epam.crmgymboot.service.TokenService;
-import jakarta.transaction.TransactionScoped;
+import com.epam.crmgymboot.service.JwtTokenService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,10 +34,10 @@ public class AuthServiceImpl implements AuthService {
     private static final int MAX_ATTEMPT = 3;
     private final AuthenticationManager authManager;
     private final UserDetailsService userDetailsService;
-    private final TokenService tokenService;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtTokenService jwtTokenService;
     private final JwtProperties jwtProperties;
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     @Transactional(dontRollbackOn = {BadCredentialsException.class, UserLockedException.class})
@@ -46,7 +49,6 @@ public class AuthServiceImpl implements AuthService {
             UserDetails user = userDetailsService.loadUserByUsername(username);
             String accessToken = createAccessToken(user);
             String refreshToken = createRefreshToken(user);
-            refreshTokenRepository.save(refreshToken, user);
 
             // If authentication is successful, reset failedAttempt and lockTime
             userRepository.findUserEntityByUsername(user.getUsername())
@@ -79,27 +81,60 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String refreshAccessToken(String refreshToken) {
-        String extractedUsername = tokenService.extractUsername(refreshToken);
-        if (extractedUsername == null) {
-            return null;
+    @Transactional
+    public TokenDto refreshAccessAndRefreshTokens(String refreshToken) {
+        RefreshToken refreshTokenEntity = refreshTokenRepository
+                .findByToken(refreshToken)
+                .orElseThrow(
+                        () -> new EntityNotFoundException("Invalid refresh token credentials.")
+                );
+
+        if(refreshTokenEntity.getExpiryDate().compareTo(Instant.now()) <= 0) {
+            throw new BadCredentialsException("Refresh token has expired. Please sign in.");
         }
-        UserDetails currentUserDetails = userDetailsService.loadUserByUsername(extractedUsername);
-        UserDetails refreshTokenUserDetails = refreshTokenRepository.findUserDetailsByToken(refreshToken);
-        if (!tokenService.hasExpiredJwtToken(refreshToken) && refreshTokenUserDetails != null && refreshTokenUserDetails.getUsername().equals(currentUserDetails.getUsername())) {
-            return createAccessToken(currentUserDetails);
-        } else {
-            return null;
-        }
+
+        UserDetails userDetails = new UserDetailsAdapter(refreshTokenEntity.getUser());
+        String newAccessToken = createAccessToken(userDetails);
+        String newRefreshToken = createRefreshToken(userDetails);
+
+        return new TokenDto(newAccessToken, newRefreshToken);
+    }
+
+    @Override
+    public void logOutUser(String username) {
+        refreshTokenRepository.deleteByUserUsername(username);
     }
 
 
-    private String createRefreshToken(UserDetails user) {
-        return tokenService.generateJwtToken(user, getRefreshTokenExpiration(), Collections.emptyMap());
+    @Transactional
+    public String createRefreshToken(UserDetails userDetails) throws UsernameNotFoundException {
+        var user = userRepository.findUserEntityByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found by username " + userDetails.getUsername()));
+
+        Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository
+                .findByUserUsername(user.getUsername());
+
+        if(optionalRefreshToken.isPresent()) {
+            // RefreshToken exist in database
+            RefreshToken refreshToken = optionalRefreshToken.get();
+            refreshToken.setToken(UUID.randomUUID().toString());
+            refreshToken.setExpiryDate(Instant.now().plusMillis(jwtProperties.refreshTokenExpiration()));
+            refreshTokenRepository.save(refreshToken);
+            return refreshToken.getToken();
+        } else {
+            RefreshToken newToken = RefreshToken.builder()
+                    .user(user)
+                    .token(UUID.randomUUID().toString())
+                    .expiryDate(Instant.now().plusMillis(jwtProperties.refreshTokenExpiration()))
+                    .build();
+
+            refreshTokenRepository.save(newToken);
+            return newToken.getToken();
+        }
     }
 
     private String createAccessToken(UserDetails userDetails) {
-        return tokenService.generateJwtToken(
+        return jwtTokenService.generateJwtToken(
                 userDetails,
                 getAccessTokenExpiration(),
                 Collections.emptyMap()
@@ -108,9 +143,5 @@ public class AuthServiceImpl implements AuthService {
 
     private Date getAccessTokenExpiration() {
         return new Date(System.currentTimeMillis() + jwtProperties.accessTokenExpiration());
-    }
-
-    private Date getRefreshTokenExpiration() {
-        return new Date(System.currentTimeMillis() + jwtProperties.refreshTokenExpiration());
     }
 }

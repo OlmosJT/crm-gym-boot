@@ -1,5 +1,6 @@
 package com.epam.crmgymboot.exception;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolation;
@@ -116,5 +117,10 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 request.getDescription(false)
         ), HttpStatus.LOCKED);
+    }
+
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<String> handleExpiredJwtException(ExpiredJwtException e) {
+        return new ResponseEntity<>("Access token has expired", HttpStatus.UNAUTHORIZED);
     }
 }

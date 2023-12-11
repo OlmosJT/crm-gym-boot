@@ -1,11 +1,16 @@
 package com.epam.crmgymboot.security;
 
-import com.epam.crmgymboot.service.TokenService;
+import com.epam.crmgymboot.exception.ErrorAPI;
+import com.epam.crmgymboot.service.JwtTokenService;
 import com.epam.crmgymboot.service.impl.UserDetailsServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,15 +20,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
-    private final TokenService tokenService;
+    private final JwtTokenService jwtTokenService;
 
-    public JwtAuthenticationFilter(UserDetailsServiceImpl userDetailsService, TokenService tokenService) {
+    public JwtAuthenticationFilter(UserDetailsServiceImpl userDetailsService, JwtTokenService jwtTokenService) {
         this.userDetailsService = userDetailsService;
-        this.tokenService = tokenService;
+        this.jwtTokenService = jwtTokenService;
     }
 
 
@@ -41,15 +48,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String jwtToken = authHeader.substring(7);
-        String username = tokenService.extractUsername(jwtToken);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails foundUser = userDetailsService.loadUserByUsername(username);
-            if (tokenService.isValidJwtToken(jwtToken, foundUser)) {
-                updateContext(foundUser, request);
+        try {
+            String username = jwtTokenService.extractUsername(jwtToken);
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails foundUser = userDetailsService.loadUserByUsername(username);
+                if (jwtTokenService.isValidJwtToken(jwtToken, foundUser)) {
+                    updateContext(foundUser, request);
+                }
             }
+            filterChain.doFilter(request, response);
+        } catch (ExpiredJwtException e) {
+            log.info(e.getMessage());
         }
-        filterChain.doFilter(request, response);
+
     }
 
     private void updateContext(UserDetails foundUser, HttpServletRequest request) {
